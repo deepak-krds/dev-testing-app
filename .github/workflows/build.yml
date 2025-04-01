@@ -1,3 +1,4 @@
+name: App Build
 on:
   push:
     branches: [ main ]
@@ -6,7 +7,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Get code
+        uses: actions/checkout@v3
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -16,7 +18,7 @@ jobs:
       - name: Build Android app
         run: npx react-native bundle --platform android --dev false --bundle-output ./android/app/src/main/assets/index.android.bundle --entry-file ./index.js --out-file ./android/app/src/main/java/com/myproject/MainApplication.java
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: android-build
           path: ./android/app/src/main/assets/index.android.bundle
