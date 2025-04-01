@@ -1,0 +1,46 @@
+name: App Build
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get code
+        uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
+      - name: Set up Java JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17' # React Native generally works well with Java 11
+          distribution: 'temurin'
+      - name: Install Android SDK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y android-sdk
+      - name: Set up Release Keystore
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE }}" | base64 -d > /tmp/release-key.keystore
+          mkdir -p ~/.android
+          echo "storeFile=/tmp/release-key.keystore" > ~/.android/release.properties
+          echo "storePassword=${{ secrets.RELEASE_KEYSTORE_PASSWORD }}" >> ~/.android/release.properties
+          echo "keyAlias=${{ secrets.RELEASE_KEY_ALIAS }}" >> ~/.android/release.properties
+          echo "keyPassword=${{ secrets.RELEASE_KEY_PASSWORD }}" >> ~/.android/release.properties
+      - name: Build APK
+        run: |
+          cd android
+          ./gradlew assembleRelease -Pandroid.injected.signing.store.file=/tmp/release-key.keystore \
+            -Pandroid.injected.signing.store.password=${{ secrets.RELEASE_KEYSTORE_PASSWORD }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.RELEASE_KEY_ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.RELEASE_KEY_PASSWORD }}
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+        path: android/app/build/outputs/apk/release/app-release.apk
